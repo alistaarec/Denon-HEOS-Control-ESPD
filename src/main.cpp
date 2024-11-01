@@ -43,7 +43,10 @@ void blankLoop() {
 }
 
 void dispMsg(){
-
+tft.fillScreen(TFT_BLACK);
+tft.setTextFont(4);
+tft.setTextColor(TFT_YELLOW, TFT_BLACK, true);
+tft.setCursor(10, 10);
 
     switch (msg) {
       case 0:
@@ -53,7 +56,7 @@ void dispMsg(){
       case 1:
       tft.println("Error Loading SD");
       tft.print("Reset and try again..");
-      delay(1000);
+      blankLoop();
       break;
       case 2:
       tft.println("Loading Configuration");
@@ -189,13 +192,13 @@ Serial.begin(9600);
 delay(10);
 displayInit();
 delay(10);
-disp_update();
-delay(10);
 SDinit();
 delay(100);
 loadWiFiCred();
 delay(100);
 wifiInit();
+delay(2000);
+tft.fillScreen(TFT_BLACK);
 
 
 }
