@@ -6,6 +6,20 @@
 #include <NTPClient.h>
 #include <SD.h>
 
+//Denon dependencies
+#include <AsyncTCP.h>
+#include <ESPmDNS.h>
+#include <functional>
+#include <ArduinoJson.h>
+#include "DenonAVR.h"
+#include "heosControl.h"
+#include "commands.h"  
+
+
+heosControl HEOS; 
+IPAddress IP(10,101,50,174);
+
+
 File sdFile;
 
 
@@ -18,8 +32,10 @@ const char* filename = "/wifi.txt";
 
 unsigned long lastTime;
 unsigned long lastTimeSec;
+unsigned long lastHeosUpd;
 int updtDisplayNTP   = 60000;
 int updtDisplaySec   = 500;
+int updHeos          = 5000;
 
 #define TFT_DISPLAY_RESOLUTION_X  320
 #define TFT_DISPLAY_RESOLUTION_Y  480
@@ -30,12 +46,58 @@ int updtDisplaySec   = 500;
 
 #define SD_CS_PIN 4
 
+String artistTxt;
+String songTxt;
+String stationTxt;
+
+int updateData = 1;
+
 int msg;
 // NTP
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "0.cz.pool.ntp.org", 3600, 60000); // Czech NTP server
 
 TFT_eSPI tft = TFT_eSPI();
+
+//--------------------------DENON CALLBACKS--------------------------------//
+//for getting info about a Radiostation or Spotify or Tidal  
+void newStationCb(const char *data, size_t len){  
+  Serial.print("new Station received:");  
+  Serial.println(data);
+  if(stationTxt != data){
+    stationTxt = data;
+    updateData = 1; 
+  }
+}  
+  
+//for info about the artist  
+void newArtistCb(const char *data,size_t len){  
+  Serial.print("Playing Artist: ");  
+  Serial.println(data);
+  if(artistTxt != data){
+    artistTxt = data;
+    updateData = 1; 
+  }
+}  
+  
+//for info about the song  
+void newSongCb(const char *data,size_t len){  
+  Serial.print("Playing Song: ");  
+  Serial.println(data);
+  if(songTxt != data){
+    songTxt = data;
+    updateData = 1;
+  }
+}  
+
+// for everything that heos is answering:  
+// inside this you have all the time in the world as it is updated in the run() function  
+void HeosResponseCb(const char* data,size_t len){  
+  Serial.print("Heos texted: ");  
+  Serial.println(data);
+   
+}  
+//--------------------------END DENON CALLS--------------------------------//
 
 void blankLoop() {
   delay(2000);
@@ -134,11 +196,9 @@ void loadWiFiCred() {
 void NTP_Update(){
 
   //tft.fillScreen(TFT_BLACK);
-  tft.setCursor(40, 120);
-  tft.setTextColor(TFT_YELLOW, TFT_BLACK, true);
-
-  tft.setTextFont(8);  
-
+  tft.setCursor(400, 1);
+  tft.setTextColor(TFT_YELLOW, TFT_DARKGREY, true);
+  tft.setTextFont(2);  
   char buffer[13];
   timeClient.update();
   sprintf(buffer, "%02d:%02d:%02d", timeClient.getHours(), timeClient.getMinutes(), timeClient.getSeconds());
@@ -147,16 +207,34 @@ void NTP_Update(){
 
 void disp_update(){
 
-  //tft.fillScreen(TFT_BLACK);
-  tft.setCursor(40, 120);
-  tft.setTextColor(TFT_YELLOW, TFT_BLACK, true);
-
-  tft.setTextFont(8);  
-
+  if(updateData == 1){
+    tft.fillScreen(TFT_BLACK);
+  }
+  tft.fillRect(0, 0, 480, 20, TFT_DARKGREY);
+  
+  tft.setCursor(400, 1);
+  tft.setTextColor(TFT_YELLOW, TFT_DARKGREY, true);
+  tft.setTextFont(2);  
   char buffer[13];
   //timeClient.update();
   sprintf(buffer, "%02d:%02d:%02d", timeClient.getHours(), timeClient.getMinutes(), timeClient.getSeconds());
   tft.print(buffer);
+
+  if(updateData == 1) {
+    
+    tft.setTextColor(TFT_WHITE, TFT_BLACK, true);
+    tft.setTextFont(4);
+    tft.setCursor(40, 70);
+    tft.print(stationTxt);
+    tft.setCursor(40, 110);
+    tft.print(artistTxt);
+    tft.setCursor(40, 145);
+    tft.print(songTxt);
+    
+    //tft.drawLine(0, 150, 480, 150,TFT_RED );
+
+    updateData = 0;
+  }
 }
 
 void displayInit()
@@ -188,7 +266,7 @@ void wifiInit()
 
 void setup(){
 
-Serial.begin(9600);
+Serial.begin(115200);
 delay(10);
 displayInit();
 delay(10);
@@ -200,6 +278,21 @@ wifiInit();
 delay(2000);
 tft.fillScreen(TFT_BLACK);
 
+  //attatch the callbacks  
+HEOS.onNewStation(newStationCb);  
+HEOS.onNewArtist(newArtistCb);  
+HEOS.onNewSong(newSongCb);  
+HEOS.onHeosResponse(HeosResponseCb); 
+  
+
+  //begin function with known IP  
+HEOS.begin(IP);  
+  //or with friendlyName  
+  //HEOS.begin(FrienldyName);  
+
+HEOS.updateMedia(); 
+
+delay(3000);
 
 }
 
@@ -215,6 +308,14 @@ void loop() {
     disp_update();
     lastTimeSec = millis();
   }
+
+    if (millis() > lastHeosUpd + updHeos)  
+  {
+     
+    lastHeosUpd = millis();
+  }
+
+  HEOS.run(); 
 }
 
 
