@@ -37,6 +37,14 @@ public:
 
   void onDenonResponed(ResponseHandler callbackFunc);
 
+  void DenonPlay();
+  void DenonStop();
+  void DenonNext();
+  void DenonPrev();
+
+  int trackTime;
+  int actTrackTime;
+
   ConnHandler _connCallback = NULL;
   DisconnHandler _disconnCallback = NULL;
   ResponseHandler _heos_response_cb = NULL;

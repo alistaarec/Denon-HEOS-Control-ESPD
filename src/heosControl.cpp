@@ -48,7 +48,7 @@ void heosControl::DataHandler() {
       const char *command = "event/player_now_playing_changed";
       if (strncmp(heos_command, command, 31) == 0) newmedia = true;
       const char *othercommand = "event/player_now_playing_progress";
-      if (strncmp(heos_command, othercommand, 31) == 0 && sid == 10) {
+      if (strncmp(heos_command, othercommand, 31) == 0 && sid == 1024 || sid == 10 || sid == 0 || sid == 3) {
         const char *heos_message = doc["heos"]["message"];
         char noTime[40];
         sprintf(noTime, "pid=%d&cur_pos=0&", pid);
@@ -66,8 +66,9 @@ void heosControl::DataHandler() {
             int durationInS = f / 1000;
             int durationMinutes = durationInS / 60;
             int durationS = 60;
+            actTrackTime = durationInS;
             char totalDur[20];
-            sprintf(totalDur, "Tidal    %02d:%02d/", durationMinutes, durationInS % durationS);
+            sprintf(totalDur, "%02d:%02d", durationMinutes, durationInS % durationS);
             const char *cur = "duration=";
             strncpy(t, heos_message, 1000);
             pch = strstr(t, cur);
@@ -77,10 +78,12 @@ void heosControl::DataHandler() {
             durationInS = f / 1000;
             durationMinutes = durationInS / 60;
             durationS = 60;
+            trackTime = durationInS;
             char buf[6];
             sprintf(buf, "%02d:%02d", durationMinutes, durationInS % durationS);
             strcat(totalDur, buf);
-            if (_station_response_cb != NULL) _station_response_cb(totalDur, strlen(totalDur));
+            
+            //if (_station_response_cb != NULL) _station_response_cb(totalDur, strlen(totalDur));
           }
         }
       }
@@ -106,7 +109,11 @@ void heosControl::DataHandler() {
       if (payload_station != NULL && strlen(payload_station) > 2) {
         if (_station_response_cb != NULL) _station_response_cb(payload_station, strlen(payload_station));
       }
-    } else if (payload_sid == 10) {
+    } else if (payload_sid == 1024) {
+      sid = 1024;
+      if (_station_response_cb != NULL) _station_response_cb("NAS Server", strlen("NAS Server"));
+    }
+      else if (payload_sid == 10) {
       sid = 10;
       if (_station_response_cb != NULL) _station_response_cb("Tidal", strlen("Tidal"));
     }
@@ -186,6 +193,66 @@ bool heosControl::begin(IPAddress _ip) {
   return false;
 }
 
+void heosControl::DenonPlay() {
+        if (AVClient->canSend() && AVClient->connected() && pid > 0) {
+        char buf1[75];
+        sprintf(buf1, "heos://player/set_play_state?pid=%d&state=play", pid);
+        // write(buf1);
+        // char *buf = new char[strlen(buf1) + 2];
+        char buf[77];
+        strcpy(buf, buf1);
+        strcat(buf, "\n");
+        AVClient->write(buf, strlen(buf));
+        // delete[] buf;
+        //newmedia = true;
+      }
+}
+
+void heosControl::DenonStop() {
+        if (AVClient->canSend() && AVClient->connected() && pid > 0) {
+        char buf1[75];
+        sprintf(buf1, "heos://player/set_play_state?pid=%d&state=stop", pid);
+        // write(buf1);
+        // char *buf = new char[strlen(buf1) + 2];
+        char buf[77];
+        strcpy(buf, buf1);
+        strcat(buf, "\n");
+        AVClient->write(buf, strlen(buf));
+        // delete[] buf;
+        //newmedia = true;
+      }
+}
+
+void heosControl::DenonNext() {
+        if (AVClient->canSend() && AVClient->connected() && pid > 0) {
+        char buf1[75];
+        sprintf(buf1, "heos://player/play_next?pid=%d", pid);
+        // write(buf1);
+        // char *buf = new char[strlen(buf1) + 2];
+        char buf[77];
+        strcpy(buf, buf1);
+        strcat(buf, "\n");
+        AVClient->write(buf, strlen(buf));
+        // delete[] buf;
+        //newmedia = true;
+      }
+}
+
+void heosControl::DenonPrev() {
+        if (AVClient->canSend() && AVClient->connected() && pid > 0) {
+        char buf1[75];
+        sprintf(buf1, "heos://player/play_previous?pid=%d", pid);
+        // write(buf1);
+        // char *buf = new char[strlen(buf1) + 2];
+        char buf[77];
+        strcpy(buf, buf1);
+        strcat(buf, "\n");
+        AVClient->write(buf, strlen(buf));
+        // delete[] buf;
+        //newmedia = true;
+      }
+}
+
 
 void heosControl::attachCb() {
   AVClient->onConnect([=](void *, AsyncClient *) {
@@ -233,6 +300,8 @@ void heosControl::write(const char *toWrite) {
   this->write(buf, strlen(buf));
   delete[] buf;
 }
+
+
 
 
 void heosControl::onConnect(ConnHandler callbackFunc) {

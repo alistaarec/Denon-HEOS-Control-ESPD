@@ -15,17 +15,21 @@
 #include "heosControl.h"
 #include "commands.h"  
 
+//lvgl
+#include <lvgl.h>
+#include "ui.h"
+
 
 heosControl HEOS; 
-IPAddress IP(10,101,50,174);
+IPAddress IP(10,101,50,175);
 
 
 File sdFile;
 
 
 // Wi-Fi credentials
-char ssid_char[100];
-char pass_char[100];
+char ssid_char[20];
+char pass_char[20];
 const char* ssid;
 const char* pass;
 const char* filename = "/wifi.txt";
@@ -33,61 +37,147 @@ const char* filename = "/wifi.txt";
 unsigned long lastTime;
 unsigned long lastTimeSec;
 unsigned long lastHeosUpd;
+unsigned long lastActTimeSong;
+unsigned long lastAnimSwitch;
 int updtDisplayNTP   = 60000;
-int updtDisplaySec   = 500;
-int updHeos          = 5000;
+int updtDisplaySec   = 400;
+int updHeos          = 10000;
+int ActTimeSong      = 1000;
+int animSwitch       = 30000;
 
-#define TFT_DISPLAY_RESOLUTION_X  320
-#define TFT_DISPLAY_RESOLUTION_Y  480
+int durationInS = 0;
+int durationInSold = 0;
+bool longMode = true;
+bool playingAct = false;
+
+
+uint16_t calData[5];
+
+#define TFT_HOR_RES   240
+#define TFT_VER_RES   320
+#define TFT_ROTATION  LV_DISPLAY_ROTATION_90
+
+
+/*LVGL draw into this buffer, 1/10 screen size usually works well. The size is in bytes*/
+#define DRAW_BUF_SIZE (TFT_HOR_RES * TFT_VER_RES / 50 * (LV_COLOR_DEPTH / 8))
+uint32_t draw_buf[DRAW_BUF_SIZE / 4];
+
+TFT_eSPI tft = TFT_eSPI( TFT_HOR_RES, TFT_VER_RES );
 
 // TFT SPI
 #define TFT_LED          33      // TFT backlight pin
 #define TFT_LED_PWM      100     // dutyCycle 0-255 last minimum was 15
 
-#define SD_CS_PIN 4
+#define SD_CS_PIN     4
+#define MOSI  13
+#define MISO  12
+#define SCK   14
 
-String artistTxt;
-String songTxt;
-String stationTxt;
-
-int updateData = 1;
-
-int msg;
 // NTP
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "0.cz.pool.ntp.org", 3600, 60000); // Czech NTP server
 
-TFT_eSPI tft = TFT_eSPI();
+void updateTimeRead();
+
+
+void my_disp_flush( lv_display_t *disp, const lv_area_t *area, uint8_t * px_map)
+{
+    lv_display_flush_ready(disp);
+}
+
+//Touch Readings
+void my_touchpad_read( lv_indev_t * indev, lv_indev_data_t * data )
+{
+    
+    uint16_t touchX = 0, touchY = 0;
+
+    bool touched = tft.getTouch( &touchX, &touchY, 600 );
+
+    if (!touched)
+    {
+        data->state = LV_INDEV_STATE_REL;
+    }
+    else
+    {
+        data->state = LV_INDEV_STATE_PR;
+
+        /*Set the coordinates*/
+        //touchX= TFT_HOR_RES  - touchX;
+        touchX= TFT_VER_RES - touchX;
+
+        data->point.x = touchY;
+        data->point.y = touchX;
+
+        Serial.print( "Data x " );
+        Serial.println( touchX );
+
+        Serial.print( "Data y " );
+        Serial.println( touchY );
+    }
+    
+}
+
+
+//millis() as tick source*//
+static uint32_t my_tick(void)
+{
+    return millis();
+}
+
+//---------------Touch Events------------//
+
+void playBtnDen(lv_event_t * e)
+{
+	HEOS.DenonPlay();
+  Serial.println("Denon Play");
+  playingAct = true;
+}
+
+void stopBtnDen(lv_event_t * e)
+{
+	HEOS.DenonStop();
+  Serial.println("Denon Stop");
+  playingAct = false;
+}
+
+void fwBtnDen(lv_event_t * e)
+{
+	HEOS.DenonNext();
+  Serial.println("Denon Next");
+  updateTimeRead();
+}
+
+void rwBtnDen(lv_event_t * e)
+{
+	HEOS.DenonPrev();
+  Serial.println("Denon Prev");
+  updateTimeRead();
+}
+
 
 //--------------------------DENON CALLBACKS--------------------------------//
-//for getting info about a Radiostation or Spotify or Tidal  
+ 
+//Station or service
 void newStationCb(const char *data, size_t len){  
   Serial.print("new Station received:");  
   Serial.println(data);
-  if(stationTxt != data){
-    stationTxt = data;
-    updateData = 1; 
-  }
+  lv_label_set_text(ui_albumLbl, data); 
 }  
   
-//for info about the artist  
+//Artist
 void newArtistCb(const char *data,size_t len){  
   Serial.print("Playing Artist: ");  
   Serial.println(data);
-  if(artistTxt != data){
-    artistTxt = data;
-    updateData = 1; 
-  }
+  lv_label_set_text(ui_artistLbl, data);
+  
 }  
   
-//for info about the song  
+//Title
 void newSongCb(const char *data,size_t len){  
   Serial.print("Playing Song: ");  
   Serial.println(data);
-  if(songTxt != data){
-    songTxt = data;
-    updateData = 1;
-  }
+  lv_label_set_text(ui_songLbl, data);
+  
 }  
 
 // for everything that heos is answering:  
@@ -95,64 +185,15 @@ void newSongCb(const char *data,size_t len){
 void HeosResponseCb(const char* data,size_t len){  
   Serial.print("Heos texted: ");  
   Serial.println(data);
-   
 }  
 //--------------------------END DENON CALLS--------------------------------//
 
-void blankLoop() {
-  delay(2000);
-  blankLoop();
+
+void SDinit(){ //SD Card Init
+  SD.begin(SD_CS_PIN);
 }
 
-void dispMsg(){
-tft.fillScreen(TFT_BLACK);
-tft.setTextFont(4);
-tft.setTextColor(TFT_YELLOW, TFT_BLACK, true);
-tft.setCursor(10, 10);
-
-    switch (msg) {
-      case 0:
-      tft.print("Loading SD...");
-      delay(1000);
-      break;
-      case 1:
-      tft.println("Error Loading SD");
-      tft.print("Reset and try again..");
-      blankLoop();
-      break;
-      case 2:
-      tft.println("Loading Configuration");
-      tft.print  ("    Please Wait...");
-      delay(1000);
-      break;
-      case 3:
-      tft.print("Connecting to: ");
-      tft.print(ssid);
-      delay(1000);
-      break;
-      case 4:
-      tft.println("WiFi Connected");
-      tft.print("IP: ");
-      tft.print(WiFi.localIP());
-      delay(1000);
-      break;
-    }
-    
-}
-
-void SDinit(){
-  if (!SD.begin(SD_CS_PIN)){
-    msg = 1;
-    dispMsg();
-    return;
-  }
-  else {
-    msg = 0;
-    dispMsg();
-  }
-}
-
-void saveCredentialsToSD(const char* ssid, const char* password) {
+void saveCredentialsToSD(const char* ssid, const char* password) { //Saving WiFi to SD
   sdFile = SD.open(filename, FILE_WRITE);
   if (sdFile) {
     sdFile.println(ssid);
@@ -164,10 +205,7 @@ void saveCredentialsToSD(const char* ssid, const char* password) {
   }
 }
 
-void loadWiFiCred() {
-
-    msg = 2;
-    dispMsg();
+void loadWiFiCred() { //Loading WiFi from SD
 
   if (SD.exists(filename)) {
     // Read credentials from SD card
@@ -193,63 +231,21 @@ void loadWiFiCred() {
   }
 }
 
-void NTP_Update(){
+void NTP_Update(){ //Update NTP Data
 
-  //tft.fillScreen(TFT_BLACK);
-  tft.setCursor(400, 1);
-  tft.setTextColor(TFT_YELLOW, TFT_DARKGREY, true);
-  tft.setTextFont(2);  
-  char buffer[13];
   timeClient.update();
-  sprintf(buffer, "%02d:%02d:%02d", timeClient.getHours(), timeClient.getMinutes(), timeClient.getSeconds());
-  tft.print(buffer);
 }
 
-void disp_update(){
+void disp_update_time(){ //Update time on TFT
 
-  if(updateData == 1){
-    tft.fillScreen(TFT_BLACK);
-  }
-  tft.fillRect(0, 0, 480, 20, TFT_DARKGREY);
-  
-  tft.setCursor(400, 1);
-  tft.setTextColor(TFT_YELLOW, TFT_DARKGREY, true);
-  tft.setTextFont(2);  
-  char buffer[13];
+  char buf[13];
   //timeClient.update();
-  sprintf(buffer, "%02d:%02d:%02d", timeClient.getHours(), timeClient.getMinutes(), timeClient.getSeconds());
-  tft.print(buffer);
-
-  if(updateData == 1) {
-    
-    tft.setTextColor(TFT_WHITE, TFT_BLACK, true);
-    tft.setTextFont(4);
-    tft.setCursor(40, 70);
-    tft.print(stationTxt);
-    tft.setCursor(40, 110);
-    tft.print(artistTxt);
-    tft.setCursor(40, 145);
-    tft.print(songTxt);
-    
-    //tft.drawLine(0, 150, 480, 150,TFT_RED );
-
-    updateData = 0;
-  }
+  sprintf(buf, "%02d:%02d:%02d", timeClient.getHours(), timeClient.getMinutes(), timeClient.getSeconds());
+  lv_label_set_text(ui_timeLbl, buf);
 }
 
-void displayInit()
-{
-	// configure backlight LED PWM functionalitites
-  pinMode(TFT_LED, OUTPUT);
-  digitalWrite(TFT_LED, HIGH);
-  
-  tft.init();
-  tft.setRotation(1);
 
-  tft.fillScreen(TFT_BLACK);
-}
-
-void wifiInit()
+void wifiInit() //Init WiFi
 {
   Serial.println(ssid_char);
   Serial.println(pass_char);
@@ -264,21 +260,92 @@ void wifiInit()
   Serial.println("connected");
 }
 
+
+void lvgl_init_func(){ //Init lvgl
+    lv_init();
+    lv_tick_set_cb( my_tick );
+
+             /* TFT init */
+    lv_display_t * disp;
+    /*TFT_eSPI can be enabled lv_conf.h to initialize the display in a simple way*/
+    disp = lv_tft_espi_create(TFT_HOR_RES, TFT_VER_RES, draw_buf, sizeof(draw_buf));
+    lv_display_set_rotation(disp, TFT_ROTATION);
+
+    static lv_indev_t* indev;
+    indev = lv_indev_create();
+    lv_indev_set_type( indev, LV_INDEV_TYPE_POINTER );
+    lv_indev_set_read_cb( indev, my_touchpad_read );
+
+    ui_init();
+}
+
+void updateTimeAct(){ //Actual song update every second
+  durationInS ++;
+  int durationMinutes = durationInS / 60;
+  int durationS = 60;
+  char timetrack[6];
+  sprintf(timetrack, "%02d:%02d", durationMinutes, durationInS % durationS);
+  lv_label_set_text(ui_actSongTime, timetrack);
+  lv_bar_set_value(ui_songProgress, durationInS, LV_ANIM_OFF);
+}
+
+void updateTimeRead(){ //Update reading of time from HEOS to synch actual song time 
+
+  durationInS = HEOS.actTrackTime; //Seconds
+  if(durationInS != durationInSold){
+    int durationMinutes = durationInS / 60;
+    int durationS = 60;
+    char timetrack[6];
+    sprintf(timetrack, "%02d:%02d", durationMinutes, durationInS % durationS);
+    lv_label_set_text(ui_actSongTime, timetrack);
+    durationInSold = durationInS;
+    playingAct = true;
+  }
+  else {
+    playingAct = false;
+  }
+
+  int totdurationInS = HEOS.trackTime; //Minutes
+  int totdurationMinutes = totdurationInS / 60;
+  int durationS = 60;
+  char timetrack[6];
+  sprintf(timetrack, "%02d:%02d", totdurationMinutes, totdurationInS % durationS);
+  lv_label_set_text(ui_songTime, timetrack);
+  lv_bar_set_range(ui_songProgress, 0 , totdurationInS);
+  lv_bar_set_value(ui_songProgress, durationInS, LV_ANIM_OFF);
+}
+
+
 void setup(){
 
 Serial.begin(115200);
-delay(10);
-displayInit();
+
+SPI.begin(SCK, MISO, MOSI); //Setup SPI here for proper function
+
+tft.begin(); 
+tft.init();
+tft.fillScreen(TFT_BLACK);
+tft.setRotation(1);
+tft.calibrateTouch(calData, TFT_MAGENTA, TFT_BLACK, 15);  //Display Calibration every start, don't have saving cal data complete yet
+
+  for (uint8_t i = 0; i < 5; i++)
+  {
+    Serial.print(calData[i]);
+    if (i < 4) Serial.print(", ");
+  }
+tft.setTouch(calData); //set cal data 
+
+
+lvgl_init_func();
 delay(10);
 SDinit();
 delay(100);
 loadWiFiCred();
 delay(100);
 wifiInit();
-delay(2000);
-tft.fillScreen(TFT_BLACK);
+delay(100);
 
-  //attatch the callbacks  
+  //attatch HEOS Callbacks 
 HEOS.onNewStation(newStationCb);  
 HEOS.onNewArtist(newArtistCb);  
 HEOS.onNewSong(newSongCb);  
@@ -286,13 +353,15 @@ HEOS.onHeosResponse(HeosResponseCb);
   
 
   //begin function with known IP  
-HEOS.begin(IP);  
+HEOS.begin(IP);                   //connect to HEOS and turn on subscription of data 
   //or with friendlyName  
   //HEOS.begin(FrienldyName);  
 
-HEOS.updateMedia(); 
+HEOS.updateMedia();  //updating data from HEOS for first time
 
-delay(3000);
+delay(500);
+Serial.println( "Setup done" );
+lv_scr_load(ui_Screen1); //load lvgl Screen
 
 }
 
@@ -303,19 +372,49 @@ void loop() {
     lastTime = millis();
   }
 
-    if (millis() > lastTimeSec + updtDisplaySec)  
+  if (millis() > lastTimeSec + updtDisplaySec)  
   {
-    disp_update();
+    disp_update_time();
     lastTimeSec = millis();
   }
 
-    if (millis() > lastHeosUpd + updHeos)  
+  if (millis() > lastHeosUpd + updHeos)  
   {
-     
+    HEOS.updateMedia();                                                           //update data from HEOS periodicly, but need to figure, why subscription not working reliably
+    updateTimeRead();
+    if(longMode == true){                                                         //Scrolling long text for a few seconds, repeated every 30s
+      lv_label_set_long_mode(ui_songLbl, LV_LABEL_LONG_SCROLL_CIRCULAR);
+      lv_label_set_long_mode(ui_artistLbl, LV_LABEL_LONG_SCROLL_CIRCULAR);
+      lv_label_set_long_mode(ui_albumLbl, LV_LABEL_LONG_SCROLL_CIRCULAR);
+      longMode = false;
+    }
+    else {
+      lv_label_set_long_mode(ui_songLbl, LV_LABEL_LONG_DOT);
+      lv_label_set_long_mode(ui_artistLbl, LV_LABEL_LONG_DOT);
+      lv_label_set_long_mode(ui_albumLbl, LV_LABEL_LONG_DOT);
+      
+    }
     lastHeosUpd = millis();
   }
+  if (playingAct == true){
+    if (millis() > lastActTimeSong + ActTimeSong)                                 //actual song time update +1s
+    {
+      updateTimeAct();
+      lastActTimeSong = millis();
+    }
+  }
+  if (millis() > lastAnimSwitch + animSwitch)                                     //only animation timer
+  {
+    longMode = true;
+    lastAnimSwitch = millis();
+  }
 
-  HEOS.run(); 
+
+  HEOS.run();                                                                     //HEOS update in loop
+
+  lv_timer_handler();                                                             //lvgl update in loop
+  delay(5);                                                                        //dunno why, for fun 
+
 }
 
 
