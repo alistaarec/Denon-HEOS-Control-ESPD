@@ -37,6 +37,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_y(ui_timeLbl, -109);
     lv_obj_set_align(ui_timeLbl, LV_ALIGN_CENTER);
     lv_label_set_text(ui_timeLbl, "00:00:00");
+    lv_obj_add_flag(ui_timeLbl, LV_OBJ_FLAG_CLICKABLE);     /// Flags
     lv_obj_set_style_text_font(ui_timeLbl, &ui_font_Font1, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_dateLbl = lv_label_create(ui_Screen1);
@@ -46,6 +47,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_y(ui_dateLbl, -109);
     lv_obj_set_align(ui_dateLbl, LV_ALIGN_CENTER);
     lv_label_set_text(ui_dateLbl, "23/11/2024");
+    lv_obj_add_flag(ui_dateLbl, LV_OBJ_FLAG_HIDDEN);     /// Flags
     lv_obj_set_style_text_font(ui_dateLbl, &ui_font_Font1, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_songProgress = lv_bar_create(ui_Screen1);
@@ -154,7 +156,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_x(ui_actSongTime, -126);
     lv_obj_set_y(ui_actSongTime, 25);
     lv_obj_set_align(ui_actSongTime, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_actSongTime, "0:30");
+    lv_label_set_text(ui_actSongTime, "00:00");
     lv_obj_set_style_text_font(ui_actSongTime, &lv_font_montserrat_12, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_songTime = lv_label_create(ui_Screen1);
@@ -163,9 +165,10 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_x(ui_songTime, 130);
     lv_obj_set_y(ui_songTime, 26);
     lv_obj_set_align(ui_songTime, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_songTime, "2:54");
+    lv_label_set_text(ui_songTime, "00:00");
     lv_obj_set_style_text_font(ui_songTime, &lv_font_montserrat_12, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    lv_obj_add_event_cb(ui_timeLbl, ui_event_timeLbl, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_playBtn, ui_event_playBtn, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_stopBtn, ui_event_stopBtn, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_fwBtn, ui_event_fwBtn, LV_EVENT_ALL, NULL);

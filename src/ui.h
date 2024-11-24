@@ -29,6 +29,7 @@ extern "C" {
 void ui_Screen1_screen_init(void);
 extern lv_obj_t * ui_Screen1;
 extern lv_obj_t * ui_TabView1;
+void ui_event_timeLbl(lv_event_t * e);
 extern lv_obj_t * ui_timeLbl;
 extern lv_obj_t * ui_dateLbl;
 extern lv_obj_t * ui_songProgress;
@@ -45,6 +46,25 @@ extern lv_obj_t * ui_artistLbl;
 extern lv_obj_t * ui_albumLbl;
 extern lv_obj_t * ui_actSongTime;
 extern lv_obj_t * ui_songTime;
+// CUSTOM VARIABLES
+
+// SCREEN: ui_Screen2
+void ui_Screen2_screen_init(void);
+extern lv_obj_t * ui_Screen2;
+extern lv_obj_t * ui_TabView2;
+extern lv_obj_t * ui_Panel2;
+extern lv_obj_t * ui_Label2;
+void ui_event_backlitSld(lv_event_t * e);
+extern lv_obj_t * ui_backlitSld;
+extern lv_obj_t * ui_Label3;
+void ui_event_calBtn(lv_event_t * e);
+extern lv_obj_t * ui_calBtn;
+extern lv_obj_t * ui_calLbl;
+void ui_event_calBtn1(lv_event_t * e);
+extern lv_obj_t * ui_calBtn1;
+extern lv_obj_t * ui_saveBack;
+void ui_event_timeLbl2(lv_event_t * e);
+extern lv_obj_t * ui_timeLbl2;
 // CUSTOM VARIABLES
 
 // EVENTS

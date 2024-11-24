@@ -13,6 +13,7 @@
 void ui_Screen1_screen_init(void);
 lv_obj_t * ui_Screen1;
 lv_obj_t * ui_TabView1;
+void ui_event_timeLbl(lv_event_t * e);
 lv_obj_t * ui_timeLbl;
 lv_obj_t * ui_dateLbl;
 lv_obj_t * ui_songProgress;
@@ -31,6 +32,26 @@ lv_obj_t * ui_actSongTime;
 lv_obj_t * ui_songTime;
 // CUSTOM VARIABLES
 
+
+// SCREEN: ui_Screen2
+void ui_Screen2_screen_init(void);
+lv_obj_t * ui_Screen2;
+lv_obj_t * ui_TabView2;
+lv_obj_t * ui_Panel2;
+lv_obj_t * ui_Label2;
+void ui_event_backlitSld(lv_event_t * e);
+lv_obj_t * ui_backlitSld;
+lv_obj_t * ui_Label3;
+void ui_event_calBtn(lv_event_t * e);
+lv_obj_t * ui_calBtn;
+lv_obj_t * ui_calLbl;
+void ui_event_calBtn1(lv_event_t * e);
+lv_obj_t * ui_calBtn1;
+lv_obj_t * ui_saveBack;
+void ui_event_timeLbl2(lv_event_t * e);
+lv_obj_t * ui_timeLbl2;
+// CUSTOM VARIABLES
+
 // EVENTS
 lv_obj_t * ui____initial_actions0;
 
@@ -44,6 +65,15 @@ lv_obj_t * ui____initial_actions0;
 ///////////////////// ANIMATIONS ////////////////////
 
 ///////////////////// FUNCTIONS ////////////////////
+void ui_event_timeLbl(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        hiddenServiceMenu(e);
+    }
+}
+
 void ui_event_playBtn(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -80,6 +110,42 @@ void ui_event_rwBtn(lv_event_t * e)
     }
 }
 
+void ui_event_backlitSld(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_VALUE_CHANGED) {
+        lcdSetBacklight(e);
+    }
+}
+
+void ui_event_calBtn(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        calDisplay(e);
+    }
+}
+
+void ui_event_calBtn1(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        saveBackMain(e);
+    }
+}
+
+void ui_event_timeLbl2(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        hiddenServiceMenu(e);
+    }
+}
+
 ///////////////////// SCREENS ////////////////////
 
 void ui_init(void)
@@ -89,6 +155,7 @@ void ui_init(void)
                                                true, LV_FONT_DEFAULT);
     lv_disp_set_theme(dispp, theme);
     ui_Screen1_screen_init();
+    ui_Screen2_screen_init();
     ui____initial_actions0 = lv_obj_create(NULL);
     lv_disp_load_scr(ui_Screen1);
 }

@@ -1,3 +1,8 @@
+/*HEOS TFT Widget Denon ESPD
+Based on HEOS / Denon AVR Library by: janphoffmann https://github.com/janphoffmann/ESP32-Heos-Control
+ESPD 1.0 Shield by Laskakit.cz
+
+*/
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
@@ -21,7 +26,7 @@
 
 
 heosControl HEOS; 
-IPAddress IP(10,101,50,175);
+IPAddress HeosIP(10,101,50,175);
 
 
 File sdFile;
@@ -40,7 +45,7 @@ unsigned long lastHeosUpd;
 unsigned long lastActTimeSong;
 unsigned long lastAnimSwitch;
 int updtDisplayNTP   = 60000;
-int updtDisplaySec   = 400;
+int updtDisplaySec   = 900;
 int updHeos          = 10000;
 int ActTimeSong      = 1000;
 int animSwitch       = 30000;
@@ -65,8 +70,8 @@ uint32_t draw_buf[DRAW_BUF_SIZE / 4];
 TFT_eSPI tft = TFT_eSPI( TFT_HOR_RES, TFT_VER_RES );
 
 // TFT SPI
-#define TFT_LED          33      // TFT backlight pin
-#define TFT_LED_PWM      100     // dutyCycle 0-255 last minimum was 15
+#define LCD_LED          33      // TFT backlight pin
+int lcd_led_PWM =        100;
 
 #define SD_CS_PIN     4
 #define MOSI  13
@@ -154,6 +159,30 @@ void rwBtnDen(lv_event_t * e)
   updateTimeRead();
 }
 
+void hiddenServiceMenu(lv_event_t * e)
+{
+  lv_slider_set_value(ui_backlitSld, lcd_led_PWM, LV_ANIM_OFF);
+  lv_scr_load(ui_Screen2);
+}
+
+void lcdSetBacklight(lv_event_t * e)
+{
+  
+	lcd_led_PWM = lv_slider_get_value(ui_backlitSld);
+  analogWrite(LCD_LED, lcd_led_PWM);
+}
+
+void calDisplay(lv_event_t * e)
+{
+	
+}
+
+void saveBackMain(lv_event_t * e)
+{
+	lv_scr_load(ui_Screen1);
+  HEOS.updateMedia();
+}
+
 
 //--------------------------DENON CALLBACKS--------------------------------//
  
@@ -185,6 +214,7 @@ void newSongCb(const char *data,size_t len){
 void HeosResponseCb(const char* data,size_t len){  
   Serial.print("Heos texted: ");  
   Serial.println(data);
+  updateTimeRead();
 }  
 //--------------------------END DENON CALLS--------------------------------//
 
@@ -242,6 +272,7 @@ void disp_update_time(){ //Update time on TFT
   //timeClient.update();
   sprintf(buf, "%02d:%02d:%02d", timeClient.getHours(), timeClient.getMinutes(), timeClient.getSeconds());
   lv_label_set_text(ui_timeLbl, buf);
+  lv_label_set_text(ui_timeLbl2, buf);
 }
 
 
@@ -320,6 +351,8 @@ void setup(){
 
 Serial.begin(115200);
 
+analogWrite(LCD_LED, lcd_led_PWM);
+
 SPI.begin(SCK, MISO, MOSI); //Setup SPI here for proper function
 
 tft.begin(); 
@@ -353,7 +386,7 @@ HEOS.onHeosResponse(HeosResponseCb);
   
 
   //begin function with known IP  
-HEOS.begin(IP);                   //connect to HEOS and turn on subscription of data 
+HEOS.begin(HeosIP);                   //connect to HEOS and turn on subscription of data 
   //or with friendlyName  
   //HEOS.begin(FrienldyName);  
 
@@ -363,12 +396,19 @@ delay(500);
 Serial.println( "Setup done" );
 lv_scr_load(ui_Screen1); //load lvgl Screen
 
+
 }
 
 void loop() {
+
+//unsigned long start = micros();
+
+HEOS.run();  
+
   if (millis() > lastTime + updtDisplayNTP)  
   {
     NTP_Update();
+    HEOS.updateMedia();                                                       //For now, because subscription is not that reliable
     lastTime = millis();
   }
 
@@ -380,8 +420,8 @@ void loop() {
 
   if (millis() > lastHeosUpd + updHeos)  
   {
-    HEOS.updateMedia();                                                           //update data from HEOS periodicly, but need to figure, why subscription not working reliably
-    updateTimeRead();
+    //HEOS.updateMedia();                                                           //update data from HEOS periodicly, but need to figure, why subscription not working reliably
+    
     if(longMode == true){                                                         //Scrolling long text for a few seconds, repeated every 30s
       lv_label_set_long_mode(ui_songLbl, LV_LABEL_LONG_SCROLL_CIRCULAR);
       lv_label_set_long_mode(ui_artistLbl, LV_LABEL_LONG_SCROLL_CIRCULAR);
@@ -396,6 +436,9 @@ void loop() {
     }
     lastHeosUpd = millis();
   }
+
+  HEOS.run();  
+
   if (playingAct == true){
     if (millis() > lastActTimeSong + ActTimeSong)                                 //actual song time update +1s
     {
@@ -413,8 +456,11 @@ void loop() {
   HEOS.run();                                                                     //HEOS update in loop
 
   lv_timer_handler();                                                             //lvgl update in loop
-  delay(5);                                                                        //dunno why, for fun 
-
+  //delay(5);  
+  
+  //unsigned long end = micros();
+  //unsigned long delta = end - start;                                                                      //dunno why, for fun 
+  //Serial.println(delta);  
 }
 
 

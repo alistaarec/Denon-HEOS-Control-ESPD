@@ -10,10 +10,14 @@
 extern "C" {
 #endif
 
+void hiddenServiceMenu(lv_event_t * e);
 void playBtnDen(lv_event_t * e);
 void stopBtnDen(lv_event_t * e);
 void fwBtnDen(lv_event_t * e);
 void rwBtnDen(lv_event_t * e);
+void lcdSetBacklight(lv_event_t * e);
+void calDisplay(lv_event_t * e);
+void saveBackMain(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/
