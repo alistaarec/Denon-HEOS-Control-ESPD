@@ -51,8 +51,6 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_style_text_font(ui_dateLbl, &ui_font_Font1, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_songProgress = lv_bar_create(ui_Screen1);
-    lv_bar_set_value(ui_songProgress, 25, LV_ANIM_OFF);
-    lv_bar_set_start_value(ui_songProgress, 0, LV_ANIM_OFF);
     lv_obj_set_width(ui_songProgress, 285);
     lv_obj_set_height(ui_songProgress, 10);
     lv_obj_set_x(ui_songProgress, 1);
@@ -121,7 +119,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_y(ui_songLbl, -68);
     lv_obj_set_align(ui_songLbl, LV_ALIGN_LEFT_MID);
     lv_label_set_long_mode(ui_songLbl, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    lv_label_set_text(ui_songLbl, "Take Me There (feat. Hayley May)");
+    lv_label_set_text(ui_songLbl, "N/A");
     lv_obj_set_style_text_color(ui_songLbl, lv_color_hex(0xFEFF00), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_songLbl, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_songLbl, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -133,7 +131,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_y(ui_artistLbl, -40);
     lv_obj_set_align(ui_artistLbl, LV_ALIGN_LEFT_MID);
     lv_label_set_long_mode(ui_artistLbl, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    lv_label_set_text(ui_artistLbl, "Solardo, Hayley May");
+    lv_label_set_text(ui_artistLbl, "N/A");
     lv_obj_set_style_text_color(ui_artistLbl, lv_color_hex(0xFFFF00), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_artistLbl, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_artistLbl, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -145,7 +143,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_y(ui_albumLbl, -13);
     lv_obj_set_align(ui_albumLbl, LV_ALIGN_LEFT_MID);
     lv_label_set_long_mode(ui_albumLbl, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    lv_label_set_text(ui_albumLbl, "Take Me There");
+    lv_label_set_text(ui_albumLbl, "N/A");
     lv_obj_set_style_text_color(ui_albumLbl, lv_color_hex(0xFFFF00), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_albumLbl, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_albumLbl, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -153,7 +151,7 @@ void ui_Screen1_screen_init(void)
     ui_actSongTime = lv_label_create(ui_Screen1);
     lv_obj_set_width(ui_actSongTime, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_actSongTime, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_actSongTime, -126);
+    lv_obj_set_x(ui_actSongTime, -124);
     lv_obj_set_y(ui_actSongTime, 25);
     lv_obj_set_align(ui_actSongTime, LV_ALIGN_CENTER);
     lv_label_set_text(ui_actSongTime, "00:00");
@@ -162,7 +160,7 @@ void ui_Screen1_screen_init(void)
     ui_songTime = lv_label_create(ui_Screen1);
     lv_obj_set_width(ui_songTime, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_songTime, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_songTime, 130);
+    lv_obj_set_x(ui_songTime, 126);
     lv_obj_set_y(ui_songTime, 26);
     lv_obj_set_align(ui_songTime, LV_ALIGN_CENTER);
     lv_label_set_text(ui_songTime, "00:00");

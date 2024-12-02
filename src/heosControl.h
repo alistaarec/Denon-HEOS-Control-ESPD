@@ -56,7 +56,8 @@ public:
 
   bool write(const char* buf, size_t i);
   void write(const char* toWrite);
-  static unsigned long pid;
+  static char pidCheck;
+  static int pid;
   static bool newmedia;
   static bool subEvent;
   void run();

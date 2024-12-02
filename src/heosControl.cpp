@@ -30,19 +30,19 @@ void heosControl::DataHandler() {
   DeserializationError err = deserializeJson(doc, newdata);
   if (err.code() == DeserializationError::Ok) {
     JsonObject heos = doc["heos"];
-    //if (pid < 0) {
-      //JsonObject payload_0 = doc["payload"][0];
-      //int newPid = payload_0["pid"];
-      //if (newPid < 0) {
-        //pid = newPid;
+    if (pid > 1) {
+      JsonObject payload_0 = doc["payload"][0];
+      int newPid = payload_0["pid"];
+        if (newPid < 0) {
+        pid = newPid;
         //write("heos://system/register_for_change_events?enable=on");
 
         if (subEvent == false){
           write("heos://system/register_for_change_events?enable=on");
           subEvent = true;
         }
-      //}
-    //}
+      }
+    }
     const char *heos_command = doc["heos"]["command"];
     if (heos_command != NULL) {
       const char *command = "event/player_now_playing_changed";
@@ -140,7 +140,7 @@ void heosControl::run() {
   if (timerTriggered || newmedia) {
     if (timerTriggered) timerTriggered = false;
     if (newmedia) {
-      if (AVClient->canSend() && AVClient->connected() && pid > 0) {
+      if (AVClient->canSend() && AVClient->connected() && pid < 0) {
         char buf1[75];
         sprintf(buf1, "heos://player/get_now_playing_media?pid=%d", pid);
         // write(buf1);
@@ -194,7 +194,7 @@ bool heosControl::begin(IPAddress _ip) {
 }
 
 void heosControl::DenonPlay() {
-        if (AVClient->canSend() && AVClient->connected() && pid > 0) {
+        if (AVClient->canSend() && AVClient->connected() && pid < 0) {
         char buf1[75];
         sprintf(buf1, "heos://player/set_play_state?pid=%d&state=play", pid);
         // write(buf1);
@@ -209,7 +209,7 @@ void heosControl::DenonPlay() {
 }
 
 void heosControl::DenonStop() {
-        if (AVClient->canSend() && AVClient->connected() && pid > 0) {
+        if (AVClient->canSend() && AVClient->connected() && pid < 0) {
         char buf1[75];
         sprintf(buf1, "heos://player/set_play_state?pid=%d&state=stop", pid);
         // write(buf1);
@@ -224,7 +224,7 @@ void heosControl::DenonStop() {
 }
 
 void heosControl::DenonNext() {
-        if (AVClient->canSend() && AVClient->connected() && pid > 0) {
+        if (AVClient->canSend() && AVClient->connected() && pid < 0) {
         char buf1[75];
         sprintf(buf1, "heos://player/play_next?pid=%d", pid);
         // write(buf1);
@@ -239,7 +239,7 @@ void heosControl::DenonNext() {
 }
 
 void heosControl::DenonPrev() {
-        if (AVClient->canSend() && AVClient->connected() && pid > 0) {
+        if (AVClient->canSend() && AVClient->connected() && pid < 0) {
         char buf1[75];
         sprintf(buf1, "heos://player/play_previous?pid=%d", pid);
         // write(buf1);
@@ -278,7 +278,8 @@ void heosControl::attachCb() {
   });
 }
 
-unsigned long heosControl::pid = -1187135118;
+char heosControl::pidCheck;
+int  heosControl::pid = 2;//-1187135118;
 bool heosControl::newmedia = false;
 bool heosControl::subEvent = false;
 

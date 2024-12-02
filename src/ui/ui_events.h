@@ -18,6 +18,13 @@ void rwBtnDen(lv_event_t * e);
 void lcdSetBacklight(lv_event_t * e);
 void calDisplay(lv_event_t * e);
 void saveBackMain(lv_event_t * e);
+void heosSetup(lv_event_t * e);
+void rbtSetting(lv_event_t * e);
+void wifiSetup(lv_event_t * e);
+void scanWifi(lv_event_t * e);
+void connWifi(lv_event_t * e);
+void heosSave(lv_event_t * e);
+void rbtespNow(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/
