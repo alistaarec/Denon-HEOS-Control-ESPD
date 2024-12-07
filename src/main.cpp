@@ -380,8 +380,8 @@ void loadWiFiCred()
     lv_label_set_text(ui_wifLoadLbl, "WiFi Data Err..");
     lv_timer_handler();
     // File doesn't exist, save default credentials
-    // ssid = "Alistar_Turris_2G";
-    // pass = "8BDZL3GQ59";
+    // ssid = "";
+    // pass = "";
     // saveCredentialsToSD(ssid, pass);
     // Serial.println("Default credentials saved to SD card.");
   }
