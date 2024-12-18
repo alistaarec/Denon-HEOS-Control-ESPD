@@ -10,6 +10,7 @@ ESPD 1.0 Shield by Laskakit.cz
 #include <SPI.h>
 #include <NTPClient.h>
 #include <SD.h>
+#include <HTTPClient.h>
 
 // Denon dependencies
 #include <AsyncTCP.h>
@@ -18,7 +19,7 @@ ESPD 1.0 Shield by Laskakit.cz
 #include <ArduinoJson.h>
 // #include "DenonAVR.h"
 #include "heosControl.h"
-#include "commands.h"
+//#include "commands.h"
 
 // lvgl
 #include <lvgl.h>
@@ -49,14 +50,12 @@ unsigned long lastHeosUpd;
 unsigned long lastActTimeSong;
 unsigned long lastAnimSwitch;
 unsigned long lastRebootTime;
-unsigned long lastCoreTaskDetect;
 int updtDisplayNTP = 60000;
 int updtDisplaySec = 900;
 int updHeos = 10000;
 int ActTimeSong = 1000;
 int animSwitch = 30000;
 int rebootTimer = 10000;
-int coreTaskDetect = 1000;
 
 int durationInS = 0;
 int durationInSold = 0;
@@ -119,7 +118,6 @@ void SDinit();
 void loadWiFiCred();
 void wifiInit();
 void NTP_Update();
-void setupTasker();
 
 void my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
 {
@@ -280,6 +278,8 @@ void rbtespNow(lv_event_t *e)
   lastRebootTime = millis();
   lv_timer_handler();
 }
+
+
 //--------------------------DENON CALLBACKS--------------------------------//
 
 // Station or service
@@ -312,9 +312,9 @@ void HeosResponseCb(const char *data, size_t len)
 {
   Serial.print("Heos texted: ");
   Serial.println(data);
-  Serial.print("PID: ");
-  Serial.println(HEOS.pid);
-  Serial.println(HEOS.pidCheck);
+  //Serial.print("PID: ");
+  //Serial.println(HEOS.pid);
+  //Serial.println(HEOS.pidCheck);
   updateTimeRead();
 }
 
@@ -378,6 +378,10 @@ void loadWiFiCred()
   else
   {
     lv_label_set_text(ui_wifLoadLbl, "WiFi Data Err..");
+    lv_timer_handler();
+    delay(3000);
+    wifiManager = true;
+    lv_scr_load(ui_Screen4); // load lvgl Screen
     lv_timer_handler();
     // File doesn't exist, save default credentials
     // ssid = "";
@@ -447,7 +451,6 @@ void lvgl_init_func()
   indev = lv_indev_create();
   lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
   lv_indev_set_read_cb(indev, my_touchpad_read);
-
   ui_init();
 }
 
@@ -709,7 +712,8 @@ void loadConfigSD()
   else
   {
     Serial.println("Error opening file for reading.");
-    lv_label_set_text(ui_settingsLoadLbl, "Loading Settings Err..");
+    lv_label_set_text(ui_settingsLoadLbl, "Writing default..");
+    saveConfigSD(lcd_led_PWM, HeosIP_charr);
   }
 }
 
@@ -737,8 +741,6 @@ void setup()
   HEOS.onNewArtist(newArtistCb);
   HEOS.onNewSong(newSongCb);
   HEOS.onHeosResponse(HeosResponseCb);
-  Serial.print("Setup on Core: ");
-  Serial.println(xPortGetCoreID());
 }
 
 void loop()
@@ -795,8 +797,6 @@ void loop()
 
     if (millis() > lastTimeSec + updtDisplaySec)
     {
-      Serial.print("Loop on Core: ");
-      Serial.println(xPortGetCoreID());
       disp_update_time();
       lastTimeSec = millis();
     }
@@ -872,7 +872,6 @@ void loop()
    HEOS.run(); // HEOS update in loop
 
   lv_timer_handler(); // lvgl update in loop
-
   // unsigned long end = micros();
   // unsigned long delta = end - start;                                                                      //dunno why, for fun
   // Serial.println(delta);

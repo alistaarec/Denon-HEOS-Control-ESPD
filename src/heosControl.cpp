@@ -105,7 +105,7 @@ void heosControl::DataHandler() {
     int payload_sid = payload["sid"];  // 3
     if (payload_sid == 3) {
       sid = 3;
-      const char *payload_station = payload["station"];  // "Bayern 2 S��d"
+      const char *payload_station = payload["station"];
       if (payload_station != NULL && strlen(payload_station) > 2) {
         if (_station_response_cb != NULL) _station_response_cb(payload_station, strlen(payload_station));
       }
@@ -117,14 +117,14 @@ void heosControl::DataHandler() {
       sid = 10;
       if (_station_response_cb != NULL) _station_response_cb("Tidal", strlen("Tidal"));
     }
-    const char *payload_artist = payload["artist"];  // "Bayern 2 S��d"
+    const char *payload_artist = payload["artist"];
     if (payload_artist != NULL && strlen(payload_artist) > 2) {
       if (_artist_response_cb != NULL) _artist_response_cb(payload_artist, strlen(payload_artist));
     } else if (payload_artist != NULL) {
       _artist_response_cb("---", strlen("---"));
     }
 
-    const char *payload_song = payload["song"];  // "Bayern 2 S��d"
+    const char *payload_song = payload["song"];
     if (payload_song != NULL && strlen(payload_song) > 2) {
       if (_song_response_cb != NULL) _song_response_cb(payload_song, strlen(payload_song));
     } else if (payload_song != NULL) {
@@ -278,7 +278,7 @@ void heosControl::attachCb() {
   });
 }
 
-char heosControl::pidCheck;
+
 int  heosControl::pid = 2;//-1187135118;
 bool heosControl::newmedia = false;
 bool heosControl::subEvent = false;

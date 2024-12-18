@@ -50,13 +50,12 @@ public:
   ResponseHandler _heos_response_cb = NULL;
   ResponseHandler _station_response_cb = NULL;
   ResponseHandler _artist_response_cb = NULL;
-  ResponseHandler _song_response_cb = NULL;
+  ResponseHandler _song_response_cb = NULL; 
   ResponseHandler __denon_response_cb = NULL;
   ErrorHandler _conErr_cb = NULL;
 
   bool write(const char* buf, size_t i);
   void write(const char* toWrite);
-  static char pidCheck;
   static int pid;
   static bool newmedia;
   static bool subEvent;
